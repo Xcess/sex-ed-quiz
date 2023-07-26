@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flashcard PWA</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+        #flashcard-container {
+            perspective: 1000px;
+            width: 80vw; /* 80% of viewport width */
+            height: 60vh; /* 60% of viewport height */
+            max-width: 800px; /* limit maximum width */
+            max-height: 600px; /* limit maximum height */
+        }
+        #flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 1s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        #flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        #flashcard > div {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            backface-visibility: hidden;
+            font-size: 2rem;
+        }
+
+        #topic {
+            font-size: 1.2rem;
+            position: absolute;
+            top: 10%;
+            padding: 10px;
+            text-align: left;
+        }
+
+        #question {
+            background-color: #1f77b4;
+            color: white;
+        }
+        #answer {
+            background-color: #ff7f0e;
+            color: rgb(0, 0, 0);
+            transform: rotateY(180deg);
+        }
+        #next {
+            margin-top: 20px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #1f77b4;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="flashcard-container">
+        <div id="flashcard">
+            <div id="question"></div>
+            <div id="topic"></div>
+            <div id="answer"></div>
+        </div>
+    </div>
+    <button id="next">Next Question</button>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var spreadsheetId = "16EkxoEoc865_fSGxklJdUzxUomjcQqZjFd2sedjKJdU";
+            var sheetName = "Sheet1";
+            var apiKey = "AIzaSyDJnvxyqR_tHRY2xU9RLKflTKgS-6qn-mA";
+            var urlQuestions = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/B2:B55?key=${apiKey}`;
+            var urlAnswers = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/D2:D55?key=${apiKey}`;
+
+            var flashcards = [];
+
+            var urlTopics = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/C2:C55?key=${apiKey}`;
+
+            $.when(
+                $.get(urlQuestions, function(data) {
+                    questions = data.values.map(function(question) {
+                        return question[0];
+                    });
+                }),
+                $.get(urlAnswers, function(data) {
+                    answers = data.values.map(function(answer) {
+                        return answer[0];
+                    });
+                }),
+                $.get(urlTopics, function(data) {
+                    topics = data.values.map(function(topic) {
+                        return topic[0];
+                    });
+                })
+            ).then(function() {
+                for(var i = 0; i < questions.length; i++) {
+                    flashcards.push({
+                        question: questions[i],
+                        answer: answers[i],
+                        topic: topics[i]
+                    });
+                }
+
+                showRandomFlashcard();
+            });
+
+
+            function showRandomFlashcard() {
+                var flashcard = flashcards[Math.floor(Math.random() * flashcards.length)];
+                $('#question').text(flashcard.question);
+                $('#answer').text(flashcard.answer);
+                $('#flashcard').removeClass('flipped');
+
+                // add topic and adjust style
+                var topic = flashcard.topic;
+                var backgroundColor;
+
+                switch (topic) {
+                    case "STI":
+                        backgroundColor = 'blue';
+                        break;
+                    case "Violence":
+                        backgroundColor = 'pink';
+                        break;
+                    case "Sexuality/Identity":
+                        backgroundColor = 'green';
+                        break;
+                    default:
+                        backgroundColor = '#1f77b4';
+                }
+
+                $('#question').css('background-color', backgroundColor);
+                $('#topic').text('Topic: ' + topic).css('font-size', '1rem');
+            }
+
+            $('#flashcard').click(function() {
+                $(this).addClass('flipped');
+            });
+
+            $('#next').click(function() {
+                showRandomFlashcard();
+            });
+        });
+    </script>
+</body>
+</html>
